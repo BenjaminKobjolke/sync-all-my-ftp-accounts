@@ -5,6 +5,7 @@ description = "Sync stored FTP accounts between WinSCP, FileZilla, Notepad++ Npp
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "kas-api-python",
     "pick[blessed]>=2.6.0",
     "pycryptodome>=4.0.1",
 ]
@@ -44,3 +45,6 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.uv.sources]
+kas-api-python = { path = "../../Intern/kas-api-python", editable = true }

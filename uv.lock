@@ -123,6 +123,20 @@ wheels = [
 ]
 
 [[package]]
+name = "kas-api-python"
+version = "0.1.0"
+source = { editable = "../../Intern/kas-api-python" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=2.4.0" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "ruff", specifier = ">=0.17.1" },
+]
+
+[[package]]
 name = "librt"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -411,6 +425,7 @@ name = "sync-all-my-ftp-accounts"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "kas-api-python" },
     { name = "pick", extra = ["blessed"] },
     { name = "pycryptodome" },
 ]
@@ -424,6 +439,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "kas-api-python", editable = "../../Intern/kas-api-python" },
     { name = "pick", extras = ["blessed"], specifier = ">=2.6.0" },
     { name = "pycryptodome", specifier = ">=4.0.1" },
 ]
