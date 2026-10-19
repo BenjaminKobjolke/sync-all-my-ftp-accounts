@@ -1,0 +1,11 @@
+Graphify: this project has a graphify knowledge graph, built at the repo-root
+`graphify-out/graph.json`. Run all graphify commands FROM THE REPO ROOT (the
+graph is resolved relative to the current directory). For any codebase question,
+run `graphify query "<question>"` first (also `graphify path "<A>" "<B>"`,
+`graphify explain "<concept>"`) instead of raw grep.
+
+Context for this greenfield project (not blockers, do not ask about them): there is no source code yet, so `graphify-out/graph.json` does not exist yet — that is expected. The plan filename is auto-generated and does not match the topic — that is expected. Project rules: CODING_RULES.md and IMPLEMENTATION_FLOW.md in the repo root. Reusable setup templates live in D:/GIT/BenjaminKobjolke/claude-coding-rules/plugins/coding-rules/rules/python_setup_files/.
+
+D:/GIT/BenjaminKobjolke/sync-all-my-ftp-accounts/claude-plans/help-me-create-a-glimmering-tulip.md $convention-check - First scan the codebase for the existing utilities, patterns and naming conventions this plan should reuse. Then, with those findings in hand, check the plan for DRY, KISS and YAGNI opportunities. Apply both sets of findings to the original plan file. Only edit the plan file — do NOT modify any source code or implement the plan. Always end with two summary blocks: SUMMARY CONVENTION CHECK — what you reused and why, or 'No convention issues found.' — and SUMMARY DRY — what you consolidated and why, or 'No DRY opportunities found.'
+
+Run fully non-interactively. NEVER ask a question and NEVER wait for input. If anything is ambiguous, blocked, or you cannot complete the task, do NOT stop to ask — write your questions and what blocked you into your output file (the plan file, or the check file for steps that write one) under a heading `## DELEGATE QUESTIONS`, then exit immediately. Always write the required SUMMARY block, even on failure.
