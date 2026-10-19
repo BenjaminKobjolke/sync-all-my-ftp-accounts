@@ -28,6 +28,10 @@ REM ----------------------------------------------------------------------------
 REM This bat lives in tools\ ; run everything from the repo root so graphify
 REM resolves the live graph at .\graphify-out\ (relative to cwd).
 pushd "%~dp0.."
+if errorlevel 1 (
+  echo ERROR: Could not switch to the project root.
+  endlocal & exit /b 1
+)
 
 REM Resolve the graphify launcher: prefer PATH, else derive from the interpreter
 REM the last build saved (graphify.exe sits next to that python.exe).
@@ -37,6 +41,10 @@ if errorlevel 1 (
   if exist "graphify-out\.graphify_python" (
     set /p GPY=<graphify-out\.graphify_python
     set "GRAPHIFY=!GPY:python.exe=graphify.exe!"
+    if not exist "!GRAPHIFY!" (
+      echo ERROR: graphify launcher not found next to the saved Python interpreter.
+      popd & endlocal & exit /b 1
+    )
   ) else (
     echo ERROR: graphify not on PATH and no graphify-out\.graphify_python found.
     echo Build the graph once in Claude:  /graphify %CODE_DIR% --directed
@@ -47,6 +55,11 @@ if errorlevel 1 (
 echo === [1/2] live-graph AST refresh (no LLM) : %CODE_DIR% ===
 set "GRAPHIFY_OUT=%CD%\graphify-out"
 "%GRAPHIFY%" update "%CD%\%CODE_DIR%"
+set "RESULT=%ERRORLEVEL%"
+if not "%RESULT%"=="0" (
+  echo ERROR: graphify update failed with exit code %RESULT%.
+  popd & endlocal & exit /b %RESULT%
+)
 echo.
 
 echo === [2/2] smoke test: live root graph ===
@@ -59,13 +72,29 @@ REM Report directed flag + node count of the LIVE root graph (should be directed
 if exist "graphify-out\.graphify_python" (
   set /p GPY2=<graphify-out\.graphify_python
   "!GPY2!" -c "import json;d=json.load(open('graphify-out/graph.json',encoding='utf-8'));print('directed:',d.get('directed'),'  nodes:',len(d.get('nodes',[])))"
+  set "RESULT=!ERRORLEVEL!"
+  if not "!RESULT!"=="0" (
+    echo ERROR: Could not inspect the live graph.
+    popd & endlocal & exit /b !RESULT!
+  )
 )
 echo.
 echo --- god nodes (top 5) ---
 "%GRAPHIFY%" god-nodes --top 5
+set "RESULT=%ERRORLEVEL%"
+if not "%RESULT%"=="0" (
+  echo ERROR: graphify god-nodes failed with exit code %RESULT%.
+  popd & endlocal & exit /b %RESULT%
+)
 echo.
 echo --- sample query ---
 "%GRAPHIFY%" query "What are the main modules and how do they connect?"
+set "RESULT=%ERRORLEVEL%"
+if not "%RESULT%"=="0" (
+  echo ERROR: graphify query failed with exit code %RESULT%.
+  popd & endlocal & exit /b %RESULT%
+)
 
 popd
 endlocal
+exit /b 0
