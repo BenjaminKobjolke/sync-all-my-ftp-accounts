@@ -5,7 +5,7 @@ import pytest
 from ftp_sync.account_matcher import AccountIndex, MatchStatus
 from ftp_sync.models import AppKind, FtpAccount, FtpProtocol
 from ftp_sync.stores.account_store import AccountStore
-from ftp_sync.sync_runner import AccountScope, SyncAction, SyncRunner
+from ftp_sync.sync_runner import AccountScope, RunningAction, SyncAction, SyncRunner, SyncSummary
 from tests.conftest import make_account
 
 
@@ -174,3 +174,105 @@ def test_search_reprompts_on_blank_or_no_hit(monkeypatch: pytest.MonkeyPatch) ->
     target, accounts, asked = _search_run(monkeypatch, ["  ", "zzz", "other"], result_index=1)
     assert len(asked) == 3
     target.add.assert_called_once_with(accounts[1])
+
+
+def _patch_running(monkeypatch: pytest.MonkeyPatch, *snapshots: set[str]) -> None:
+    """Each tasklist call returns the next snapshot; the last one repeats."""
+    queue = list(snapshots)
+    monkeypatch.setattr(
+        "ftp_sync.running_apps.running_process_names",
+        lambda: queue.pop(0) if len(queue) > 1 else queue[0],
+    )
+
+
+def _interactive_run(
+    monkeypatch: pytest.MonkeyPatch, running_answers: list[RunningAction]
+) -> tuple[MagicMock, list[list[str]]]:
+    target = fake_store(AppKind.FILEZILLA, [])
+    shown: list[list[str]] = []
+    answers = [
+        0,  # source: FMAN
+        *[list(RunningAction).index(a) for a in running_answers],
+        list(AccountScope).index(AccountScope.ALL),
+        list(SyncAction).index(SyncAction.CREATE_MISSING),
+    ]
+
+    def show_menu(options: list[str], title: str, **_: object) -> int:
+        shown.append(options)
+        return answers.pop(0)
+
+    monkeypatch.setattr("ftp_sync.menu.show_menu", show_menu)
+    SyncRunner([fake_store(AppKind.FMAN, [make_account()]), target]).run(None)
+    return target, shown
+
+
+def test_running_target_retry_then_syncs(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_running(monkeypatch, {"filezilla.exe"}, set())
+    target, shown = _interactive_run(monkeypatch, [RunningAction.RETRY])
+    assert shown[1] == [a.value for a in RunningAction]
+    target.load.assert_called_once()
+    target.add.assert_called_once()
+
+
+def test_running_target_quit_writes_nothing(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_running(monkeypatch, {"filezilla.exe"})
+    target = fake_store(AppKind.FILEZILLA, [])
+    answers = [0, list(RunningAction).index(RunningAction.QUIT)]
+    monkeypatch.setattr("ftp_sync.menu.show_menu", lambda options, title, **_: answers.pop(0))
+    summary = SyncRunner([fake_store(AppKind.FMAN, [make_account()]), target]).run(None)
+    target.add.assert_not_called()
+    assert summary == SyncSummary()
+
+
+def test_running_target_continue_anyway(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_running(monkeypatch, {"filezilla.exe"})
+    target, _ = _interactive_run(monkeypatch, [RunningAction.CONTINUE])
+    target.add.assert_called_once()
+
+
+def test_running_source_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_running(monkeypatch, {"fman.exe"})
+    target, shown = _interactive_run(monkeypatch, [])
+    assert [a.value for a in RunningAction] not in shown
+    target.add.assert_called_once()
+
+
+def test_scripted_run_aborts_when_target_running(monkeypatch: pytest.MonkeyPatch) -> None:
+    _patch_running(monkeypatch, {"filezilla.exe"})
+    target = fake_store(AppKind.FILEZILLA, [])
+    with pytest.raises(RuntimeError, match="FileZilla"):
+        SyncRunner([fake_store(AppKind.FMAN, [make_account()]), target]).run(AppKind.FMAN)
+    target.add.assert_not_called()
+
+
+def test_empty_source_password_counts_as_found() -> None:
+    index = AccountIndex([make_account(password="secret")])
+    assert index.status_of(make_account(password=""), supported=True) is MatchStatus.FOUND
+
+
+def test_source_only_store_is_never_a_target(monkeypatch: pytest.MonkeyPatch) -> None:
+    kas = fake_store(AppKind.ALL_INKL, [])
+    target = fake_store(AppKind.NPPFTP, [])
+    _patch_menu(monkeypatch, [SyncAction.CREATE_MISSING])
+    SyncRunner([fake_store(AppKind.FMAN, [make_account()]), kas, target]).run(AppKind.FMAN)
+    kas.load.assert_not_called()
+    kas.add.assert_not_called()
+    target.add.assert_called_once()
+
+
+def test_account_without_password_asks_for_one(monkeypatch: pytest.MonkeyPatch) -> None:
+    account = make_account(password="")
+    source = fake_store(AppKind.ALL_INKL, [account])
+    target = fake_store(AppKind.NPPFTP, [])
+    asked: list[FtpAccount] = []
+
+    def ask_password(acc: FtpAccount, store: AccountStore) -> str:
+        asked.append(acc)
+        assert store is source
+        return "chosen"
+
+    monkeypatch.setattr("ftp_sync.password_prompt.ask_password", ask_password)
+    _patch_menu(monkeypatch, [SyncAction.CREATE_MISSING])
+    SyncRunner([source, target]).run(AppKind.ALL_INKL)
+    assert asked == [account]
+    target.add.assert_called_once_with(make_account(password="chosen"))

@@ -1,5 +1,6 @@
 """The only place that talks to `pick`. Tests patch these functions, never pick itself."""
 
+import getpass
 import sys
 
 from pick import pick
@@ -50,3 +51,19 @@ def show_multiselect(options: list[str], title: str) -> list[int]:
         return [int(index) for _, index in selected]
     except KeyboardInterrupt:
         sys.exit(1)
+
+
+def ask_secret(prompt: str) -> str:
+    """Hidden line input for passwords; Ctrl-C exits."""
+    _require_tty()
+    try:
+        return getpass.getpass(prompt)
+    except KeyboardInterrupt:
+        sys.exit(1)
+
+
+def show_secret(label: str, value: str) -> None:
+    """Show a secret once on the console. Deliberately not via AppLogger, which never
+    receives passwords."""
+    sys.stdout.write(f"{label}: {value}\n")
+    sys.stdout.flush()

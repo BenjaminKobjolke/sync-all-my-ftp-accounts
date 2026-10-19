@@ -26,6 +26,9 @@ class AccountIndex:
 
     def status_of(self, account: FtpAccount, supported: bool) -> MatchStatus:
         matches = self._by_key.get(account.match_key(), [])
+        # A source without a password (All-Inkl never returns one) cannot disagree.
+        if matches and not account.password:
+            return MatchStatus.FOUND
         if any(m.password == account.password for m in matches):
             return MatchStatus.FOUND
         if matches:

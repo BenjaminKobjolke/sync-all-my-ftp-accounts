@@ -18,7 +18,6 @@ def main(argv: list[str] | None = None) -> int:
 
     settings = Settings.from_env()
     AppLogger.configure(settings.log_level)
-    AppLogger.info("Close FileZilla and Notepad++ first - they overwrite their config on exit.")
     try:
         stores = build_stores(settings, BackupCoordinator(settings.backup_dir))
         SyncRunner(stores).run(AppKind(args.source) if args.source else None)

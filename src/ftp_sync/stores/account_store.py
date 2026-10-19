@@ -1,7 +1,7 @@
 """Contract every credential store implements, plus small shared helpers."""
 
 from collections.abc import Collection
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from ftp_sync import constants
 from ftp_sync.models import AppKind, FtpAccount, FtpProtocol
@@ -17,6 +17,13 @@ class AccountStore(Protocol):
     def add(self, account: FtpAccount) -> None: ...
 
     def supports(self, protocol: FtpProtocol) -> bool: ...
+
+
+@runtime_checkable
+class PasswordChangingStore(Protocol):
+    """A source that can set a new password on the server for one of its accounts."""
+
+    def change_password(self, account: FtpAccount, password: str) -> None: ...
 
 
 def unique_name(name: str, taken: Collection[str]) -> str:

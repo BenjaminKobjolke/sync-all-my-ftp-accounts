@@ -8,7 +8,18 @@ APP_LABELS = {
     "filezilla": "FileZilla",
     "nppftp": "Notepad++ (NppFTP)",
     "fman": "fman",
+    "allinkl": "All-Inkl (KAS)",
 }
+
+# Executable names as tasklist reports them, lowercased. These apps keep their site
+# list in memory and write it back on exit, wiping accounts added while they run.
+APP_PROCESS_NAMES = {
+    "winscp": "winscp.exe",
+    "filezilla": "filezilla.exe",
+    "nppftp": "notepad++.exe",
+    "fman": "fman.exe",
+}
+TASKLIST_COMMAND = ["tasklist", "/FO", "CSV", "/NH"]
 
 FOLDER_SEPARATOR = "/"
 
@@ -20,6 +31,7 @@ ENV_FMAN_PATH = "FTP_SYNC_FMAN_PATH"
 ENV_WINSCP_KEY = "FTP_SYNC_WINSCP_KEY"
 ENV_BACKUP_DIR = "FTP_SYNC_BACKUP_DIR"
 ENV_LOG_LEVEL = "FTP_SYNC_LOG_LEVEL"
+ENV_SETTINGS_PATH = "FTP_SYNC_SETTINGS_PATH"
 
 # Default store locations, relative to %APPDATA% (registry key relative to HKCU)
 FILEZILLA_RELATIVE_PATH = r"FileZilla\sitemanager.xml"
@@ -27,6 +39,11 @@ NPPFTP_RELATIVE_PATH = r"Notepad++\plugins\config\NppFTP\NppFTP.xml"
 FMAN_RELATIVE_PATH = r"fman\Plugins\User\Settings\FTP Bookmarks (Windows).json"
 WINSCP_SESSIONS_KEY = r"Software\Martin Prikryl\WinSCP 2\Sessions"
 DEFAULT_BACKUP_DIR = "backups"
+DEFAULT_SETTINGS_PATH = "settings.json"
+
+# settings.json
+KAS_ACCOUNTS_KEY = "kas_accounts"
+KAS_ACCOUNT_FIELDS = ("name", "login", "password")
 
 # WinSCP registry values
 WINSCP_HOST = "HostName"

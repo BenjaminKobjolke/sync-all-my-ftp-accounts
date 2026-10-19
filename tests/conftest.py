@@ -26,3 +26,9 @@ def make_account(**overrides: object) -> FtpAccount:
 @pytest.fixture
 def backup(tmp_path: Path) -> BackupCoordinator:
     return BackupCoordinator(tmp_path / "backups")
+
+
+@pytest.fixture(autouse=True)
+def no_running_apps(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep tests off the real tasklist and the developer's open apps."""
+    monkeypatch.setattr("ftp_sync.running_apps.running_process_names", set)

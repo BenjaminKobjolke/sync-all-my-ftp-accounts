@@ -112,11 +112,18 @@ def test_fman_rejects_sftp(fman: FmanStore) -> None:
 
 @pytest.mark.parametrize("store_name", ["filezilla", "nppftp", "fman"])
 @pytest.mark.parametrize("protocol", [FtpProtocol.FTP, FtpProtocol.FTPS])
+@pytest.mark.parametrize("password", ["p@ss:w/rd ä", ""])  # "" = All-Inkl source, no password
 def test_add_roundtrip_and_backup(
-    request: pytest.FixtureRequest, tmp_path: Path, store_name: str, protocol: FtpProtocol
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    store_name: str,
+    protocol: FtpProtocol,
+    password: str,
 ) -> None:
     store: AccountStore = request.getfixturevalue(store_name)
-    account = make_account(protocol=protocol, folder="New/Sub", remote_dir="/var/www", port=990)
+    account = make_account(
+        protocol=protocol, folder="New/Sub", remote_dir="/var/www", port=990, password=password
+    )
     before = len(store.load())
     store.add(account)
     store.add(account)  # second add of same name must not overwrite the first

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ftp_sync import constants
+from ftp_sync.config.kas_accounts import KasAccountConfig, load_kas_accounts
 
 
 @dataclass(frozen=True)
@@ -15,6 +16,7 @@ class Settings:
     winscp_key: str
     backup_dir: Path
     log_level: str = "INFO"
+    kas_accounts: tuple[KasAccountConfig, ...] = ()
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -28,6 +30,9 @@ class Settings:
             winscp_key=os.getenv(constants.ENV_WINSCP_KEY, constants.WINSCP_SESSIONS_KEY),
             backup_dir=_path(constants.ENV_BACKUP_DIR, Path(constants.DEFAULT_BACKUP_DIR)),
             log_level=os.getenv(constants.ENV_LOG_LEVEL, "INFO"),
+            kas_accounts=load_kas_accounts(
+                _path(constants.ENV_SETTINGS_PATH, Path(constants.DEFAULT_SETTINGS_PATH))
+            ),
         )
 
 

@@ -23,10 +23,20 @@ class AppKind(StrEnum):
     FILEZILLA = "filezilla"
     NPPFTP = "nppftp"
     FMAN = "fman"
+    ALL_INKL = "allinkl"
 
     @property
     def label(self) -> str:
         return constants.APP_LABELS[self.value]
+
+    @property
+    def is_writable(self) -> bool:
+        """False for remote sources that can only be read (no process to close either)."""
+        return self is not AppKind.ALL_INKL
+
+    @property
+    def process_name(self) -> str:
+        return constants.APP_PROCESS_NAMES[self.value]
 
 
 @dataclass(frozen=True)

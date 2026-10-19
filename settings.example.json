@@ -1,0 +1,5 @@
+{
+  "kas_accounts": [
+    { "name": "Main account", "login": "w0123456", "password": "kas-password" }
+  ]
+}

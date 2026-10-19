@@ -4,13 +4,17 @@ import json
 import subprocess
 import winreg
 from collections.abc import Iterator
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from kas_api import KasFtpUser
 
 from ftp_sync.backup import BackupCoordinator
+from ftp_sync.config.kas_accounts import KasAccountConfig
 from ftp_sync.config.settings import Settings
 from ftp_sync.models import AppKind, FtpProtocol
+from ftp_sync.password_prompt import PasswordAction
 from ftp_sync.stores.registry import build_stores
 from ftp_sync.stores.winscp_store import WinScpStore
 from ftp_sync.sync_runner import SyncAction, SyncRunner
@@ -58,9 +62,50 @@ def test_sync_from_fman_creates_everywhere(
     stores = build_stores(settings, BackupCoordinator(settings.backup_dir))
     summary = SyncRunner(stores).run(AppKind.FMAN)
     assert summary.created == {AppKind.WINSCP: 1, AppKind.FILEZILLA: 1, AppKind.NPPFTP: 1}
-    for store in stores:
+    for store in (s for s in stores if s.kind.is_writable):
         (account,) = store.load()
         assert (account.host, account.user, account.password) == ("f.example", "fred", "f@pw")
     # Second run: everything found, nothing created, no menu needed.
     monkeypatch.setattr("ftp_sync.menu.show_menu", lambda *_a, **_k: pytest.fail("asked"))
     assert not SyncRunner(stores).run(AppKind.FMAN).created
+
+
+class FakeKasClient:
+    """Stands in for the network client; every KAS login has one FTP user."""
+
+    def __init__(self, login: str, password: str) -> None:
+        self.login = login
+
+    def get_ftp_users(self) -> list[KasFtpUser]:
+        return [KasFtpUser(f"f-{self.login}", "w0001", "/", "demo", False)]
+
+
+def test_sync_from_all_inkl_with_existing_password(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("ftp_sync.stores.registry.KasClient", FakeKasClient)
+    settings = replace(settings, kas_accounts=(KasAccountConfig("Customer", "w0001", "kas-pw"),))
+    answers = [SyncAction.CREATE_MISSING, PasswordAction.EXISTING]
+    monkeypatch.setattr(
+        "ftp_sync.menu.show_menu",
+        lambda *_a, **_k: list(type(answers[0])).index(answers.pop(0)),  # type: ignore[arg-type]
+    )
+    monkeypatch.setattr("ftp_sync.menu.ask_secret", lambda prompt: "ftp-pw")
+    stores = build_stores(settings, BackupCoordinator(settings.backup_dir))
+
+    summary = SyncRunner(stores).run(AppKind.ALL_INKL)
+
+    writable = [k for k in AppKind if k.is_writable]
+    assert summary.created == dict.fromkeys(writable, 1)
+    for store in stores:
+        if store.kind in (AppKind.WINSCP, AppKind.FILEZILLA, AppKind.NPPFTP):
+            (account,) = store.load()
+            assert (account.host, account.user, account.password, account.folder) == (
+                "w0001.kasserver.com",
+                "f-w0001",
+                "ftp-pw",
+                "Customer",
+            )
+    # Second run: found by host + user although All-Inkl returns no password.
+    monkeypatch.setattr("ftp_sync.menu.show_menu", lambda *_a, **_k: pytest.fail("asked"))
+    assert not SyncRunner(stores).run(AppKind.ALL_INKL).created
