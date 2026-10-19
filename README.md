@@ -113,4 +113,9 @@ tools\graphify_update.bat        :: refresh code graph
 update.bat
 ```
 
+Every test has a 120 s limit (`timeout` in `pyproject.toml`). A test that genuinely needs longer
+sets its own: `@pytest.mark.timeout(300)` on the test, `pytestmark = pytest.mark.timeout(300)`
+for a whole module, or `timeout(0)` for no limit. Keep it below the Tickets Watcher's test command
+limit (`analysis_test_timeout_seconds`, default 540 s), which stops the whole run.
+
 Architecture, store formats and password schemes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
