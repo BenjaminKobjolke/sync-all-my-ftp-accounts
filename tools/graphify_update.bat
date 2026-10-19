@@ -39,7 +39,7 @@ set "GRAPHIFY=graphify"
 where graphify >nul 2>nul
 if errorlevel 1 (
   if exist "graphify-out\.graphify_python" (
-    set /p GPY=<graphify-out\.graphify_python
+    for /f "usebackq delims=" %%A in ("graphify-out\.graphify_python") do set "GPY=%%A"
     set "GRAPHIFY=!GPY:python.exe=graphify.exe!"
     if not exist "!GRAPHIFY!" (
       echo ERROR: graphify launcher not found next to the saved Python interpreter.
@@ -70,8 +70,8 @@ if not exist "graphify-out\graph.json" (
 )
 REM Report directed flag + node count of the LIVE root graph (should be directed:True).
 if exist "graphify-out\.graphify_python" (
-  set /p GPY2=<graphify-out\.graphify_python
-  "!GPY2!" -c "import json;d=json.load(open('graphify-out/graph.json',encoding='utf-8'));print('directed:',d.get('directed'),'  nodes:',len(d.get('nodes',[])))"
+  for /f "usebackq delims=" %%A in ("graphify-out\.graphify_python") do set "GPY2=%%A"
+  "!GPY2!" -c "import json;d=json.load(open('graphify-out/graph.json',encoding='utf-8'));print('directed:',d.get('directed'),'  nodes:',len(d.get('nodes',[])));raise SystemExit(0 if d.get('directed') is True else 'ERROR: live graph is not directed')"
   set "RESULT=!ERRORLEVEL!"
   if not "!RESULT!"=="0" (
     echo ERROR: Could not inspect the live graph.
