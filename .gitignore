@@ -11,3 +11,5 @@ src/graphify-out/
 .claude/
 PLAN_*.md
 tmp/
+claude-plans
+settings.json
