@@ -11,6 +11,13 @@ def _require_tty() -> None:
         raise RuntimeError("Interactive menu needs a console - run start.bat in a terminal")
 
 
+def _end_line() -> None:
+    """pick leaves the cursor after the last option; without this the next prompt or log
+    line is glued to it (e.g. 'QuitDeploy config file:')."""
+    sys.stdout.write("\n")
+    sys.stdout.flush()
+
+
 def show_menu(options: list[str], title: str, default_index: int = 0) -> int:
     """Arrow-key menu; return the selected index. Ctrl-C exits."""
     _require_tty()
@@ -22,6 +29,7 @@ def show_menu(options: list[str], title: str, default_index: int = 0) -> int:
             default_index=default_index,
             backend="blessed",  # curses breaks arrow keys on Windows after subprocesses
         )
+        _end_line()
         return int(index)
     except KeyboardInterrupt:
         sys.exit(1)
@@ -48,6 +56,7 @@ def show_multiselect(options: list[str], title: str) -> list[int]:
             min_selection_count=0,
             backend="blessed",
         )
+        _end_line()
         return [int(index) for _, index in selected]
     except KeyboardInterrupt:
         sys.exit(1)
