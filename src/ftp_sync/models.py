@@ -24,6 +24,7 @@ class AppKind(StrEnum):
     NPPFTP = "nppftp"
     FMAN = "fman"
     ALL_INKL = "allinkl"
+    DEPLOY_TOOL = "deploytool"
 
     @property
     def label(self) -> str:
@@ -32,7 +33,7 @@ class AppKind(StrEnum):
     @property
     def is_writable(self) -> bool:
         """False for remote sources that can only be read (no process to close either)."""
-        return self is not AppKind.ALL_INKL
+        return self not in (AppKind.ALL_INKL, AppKind.DEPLOY_TOOL)
 
     @property
     def process_name(self) -> str:

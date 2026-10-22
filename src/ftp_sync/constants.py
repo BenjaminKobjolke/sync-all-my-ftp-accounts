@@ -9,6 +9,7 @@ APP_LABELS = {
     "nppftp": "Notepad++ (NppFTP)",
     "fman": "fman",
     "allinkl": "All-Inkl (KAS)",
+    "deploytool": "Deploy tool config",
 }
 
 # Executable names as tasklist reports them, lowercased. These apps keep their site
@@ -44,6 +45,12 @@ DEFAULT_SETTINGS_PATH = "settings.json"
 # settings.json
 KAS_ACCOUNTS_KEY = "kas_accounts"
 KAS_ACCOUNT_FIELDS = ("name", "login", "password")
+DEPLOY_TOOL_PATH_KEY = "deploy_tool_path"
+
+# Deploy tool (export_ftp.php prints one JSON list of FTP logins as its last output line)
+DEPLOY_TOOL_PHP = r"php\php.exe"
+DEPLOY_TOOL_EXPORT = "export_ftp.php"
+DEPLOY_CONFIG_PROMPT = "Deploy config file: "
 
 # WinSCP registry values
 WINSCP_HOST = "HostName"

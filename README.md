@@ -10,6 +10,10 @@ CLI tool that keeps stored FTP/SFTP accounts in sync between:
 Additional source (read only): **All-Inkl** — the FTP users of every KAS account listed in
 `settings.json`, read via the KAS API ([kas-api-python](../../Intern/kas-api-python)).
 
+Additional source (read only): **Deploy tool config** — the FTP logins of one
+[deploy-tool](../../Intern/deploy-tool) config file (`config_*.php`), read by the
+deploy tool itself.
+
 ## Feature: sync from one source
 
 Pick a source app, then **Sync all accounts** or **Search accounts...**. Search takes a text
@@ -45,6 +49,18 @@ creating a missing account you choose its password:
 All-Inkl is never a target. A KAS login that fails is logged and skipped.
 Details: [docs/ALL_INKL_SOURCE.md](docs/ALL_INKL_SOURCE.md).
 
+### Deploy tool config as source
+
+Pick **Deploy tool config** and enter the path to one config file, e.g.
+`D:\wamp64\www\animate-web-interface\deploy\config_animate-web.php` (surrounding quotes from
+Explorer's "Copy as path" are fine). The tool runs the deploy tool's `export_ftp.php` with its
+bundled `php\php.exe`, so presets, defaults and validation are the deploy tool's own. Every
+entry of the file becomes one top-level account (no folder) named after the entry's `name`,
+protocol from `transferType` (default FTP), remote dir = `ftp.root`.
+Passwords come from the file. An invalid config aborts with the deploy tool's error output.
+The deploy tool is never a target.
+Details: [docs/DEPLOY_TOOL_SOURCE.md](docs/DEPLOY_TOOL_SOURCE.md).
+
 Before the first write to a store in a run, a backup is written to `backups/<timestamp>/`
 (files copied, WinSCP sessions exported as `.reg`).
 
@@ -70,9 +86,11 @@ install.bat
 ```bat
 start.bat
 start.bat --source winscp
+start.bat --source deploytool --deploy-config D:\path\to\deploy\config_site.php
 ```
 
-`--source` accepts `winscp`, `filezilla`, `nppftp`, `fman`, `allinkl`.
+`--source` accepts `winscp`, `filezilla`, `nppftp`, `fman`, `allinkl`, `deploytool`.
+`--deploy-config` skips the path prompt of the deploy tool source.
 
 ## Configuration
 
@@ -88,6 +106,17 @@ All-Inkl KAS logins live in `settings.json` in the project root (gitignored; cop
 ```
 
 No `settings.json` = All-Inkl is not offered as a source.
+
+The deploy tool source needs the deploy-tool folder (the one with `export_ftp.php`):
+
+```json
+{
+  "deploy_tool_path": "D:/wamp64/www/deploy-tool"
+}
+```
+
+Without it (or without `export_ftp.php` there) **Deploy tool config** is not offered.
+Integration test against the real deploy tool: set `FTP_SYNC_TEST_DEPLOY_TOOL` to that folder.
 
 Environment overrides (see `src/ftp_sync/config/settings.py`):
 

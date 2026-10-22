@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ftp_sync import constants
+from ftp_sync.config.deploy_tool import load_deploy_tool_path
 from ftp_sync.config.kas_accounts import KasAccountConfig, load_kas_accounts
 
 
@@ -17,10 +18,12 @@ class Settings:
     backup_dir: Path
     log_level: str = "INFO"
     kas_accounts: tuple[KasAccountConfig, ...] = ()
+    deploy_tool_path: Path | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
         appdata = Path(os.getenv(constants.ENV_APPDATA, ""))
+        settings_path = _path(constants.ENV_SETTINGS_PATH, Path(constants.DEFAULT_SETTINGS_PATH))
         return cls(
             filezilla_path=_path(
                 constants.ENV_FILEZILLA_PATH, appdata / constants.FILEZILLA_RELATIVE_PATH
@@ -30,9 +33,8 @@ class Settings:
             winscp_key=os.getenv(constants.ENV_WINSCP_KEY, constants.WINSCP_SESSIONS_KEY),
             backup_dir=_path(constants.ENV_BACKUP_DIR, Path(constants.DEFAULT_BACKUP_DIR)),
             log_level=os.getenv(constants.ENV_LOG_LEVEL, "INFO"),
-            kas_accounts=load_kas_accounts(
-                _path(constants.ENV_SETTINGS_PATH, Path(constants.DEFAULT_SETTINGS_PATH))
-            ),
+            kas_accounts=load_kas_accounts(settings_path),
+            deploy_tool_path=load_deploy_tool_path(settings_path),
         )
 
 

@@ -1,5 +1,6 @@
 {
   "kas_accounts": [
     { "name": "Main account", "login": "w0123456", "password": "kas-password" }
-  ]
+  ],
+  "deploy_tool_path": "D:/wamp64/www/deploy-tool"
 }

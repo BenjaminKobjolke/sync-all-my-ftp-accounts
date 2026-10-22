@@ -6,21 +6,23 @@ Python package in `src/ftp_sync/`. Entry point `ftp_sync.main:main` (`start.bat`
 
 | Module | Role |
 |---|---|
-| `main.py` | CLI args (`--source`), central error handler (logs error, exit code 1) |
-| `config/settings.py` | `Settings` — store paths, WinSCP key, backup dir, log level, KAS accounts; env overrides |
+| `main.py` | CLI args (`--source`, `--deploy-config`), central error handler (logs error, exit code 1) |
+| `config/settings.py` | `Settings` — store paths, WinSCP key, backup dir, log level, KAS accounts, deploy-tool path; env overrides |
 | `config/kas_accounts.py` | `load_kas_accounts(path)` — validated `KasAccountConfig` list from `settings.json` |
+| `config/deploy_tool.py` | `load_deploy_tool_path(path)` — `deploy_tool_path` from `settings.json`, or None |
 | `constants.py` | All string/number constants (paths, XML tags, registry value names, protocol codes) |
 | `models.py` | `FtpAccount` (frozen), `FtpProtocol` (FTP/FTPS/SFTP), `AppKind` |
 | `app_logger.py` | `AppLogger` — only logging entry point; never receives passwords |
 | `backup.py` | `BackupCoordinator` — backs up each store once per run before its first write |
 | `account_matcher.py` | `AccountIndex` + `MatchStatus` — is a source account present in a target? |
-| `menu.py` | Only `pick` call site (`backend="blessed"`); refuses to run without a console |
+| `menu.py` | Only `pick` call site (`backend="blessed"`); refuses to run without a console; ends the line after each menu so the next prompt starts fresh |
 | `sync_runner.py` | Feature flow: pick source, ensure targets closed, report per account, create where missing, summary |
 | `password_prompt.py` | `ask_password` — password for a source account without one (existing / empty / new on the server) |
 | `running_apps.py` | `running_process_names()` — lowercased exe names from `tasklist /FO CSV /NH`; empty set on failure |
 | `stores/account_store.py` | `AccountStore` + `PasswordChangingStore` Protocols, helpers (`unique_name`, `join_folder`, `parse_port`) |
 | `stores/kas_store.py` | `KasStore` — All-Inkl FTP users via `kas_api.KasClient`; source only |
-| `stores/registry.py` | `build_stores(settings, backup)` — the list of all stores |
+| `stores/deploy_tool_store.py` | `DeployToolStore` — FTP logins of one deploy-tool config via its `export_ftp.php`; source only |
+| `stores/registry.py` | `build_stores(settings, backup, deploy_config=None)` — the list of all stores |
 | `stores/*_store.py` | One store per app (load + add) |
 | `stores/*_password.py` | Password codecs (WinSCP, NppFTP) |
 | `stores/xml_file.py` | Shared XML helpers for FileZilla/NppFTP |
@@ -43,7 +45,7 @@ FileZilla `<Folder>` elements and the NppFTP `parent` attribute. fman has no fol
 
 ### Source-only stores
 
-`AppKind.is_writable` is False for `ALL_INKL`. `SyncRunner` never uses such a store as a
+`AppKind.is_writable` is False for `ALL_INKL` and `DEPLOY_TOOL`. `SyncRunner` never uses such a store as a
 target (never loads it, never asks for its process), `supports()` is False and `add()` raises.
 `KasStore` also implements `PasswordChangingStore.change_password` (KAS `update_ftpuser`),
 which `password_prompt.ask_password` offers as "Set a new password".
@@ -114,6 +116,15 @@ while they run. After the source pick, `SyncRunner._ensure_closed` compares each
   user=login, password="", FTPS, port 21, folder=<KAS account name>)`. No `remote_dir`:
   sub-users are chrooted to their `ftp_path`.
 - The API never returns FTP passwords; `SyncRunner` asks per created account.
+
+### Deploy tool config
+
+- Not parsed here: `DeployToolStore` runs `<deploy_tool_path>\php\php.exe export_ftp.php
+  <config>` (cwd = deploy tool) and parses the last stdout line as a JSON list.
+- Each entry → `FtpAccount(name, host=server, user, password, protocol=transferType,
+  port=parse_port(port or default), remote_dir=root without trailing /)`, no folder.
+- No JSON line or non-zero exit → `RuntimeError` with the tool's output.
+  Details: [DEPLOY_TOOL_SOURCE.md](DEPLOY_TOOL_SOURCE.md).
 
 ## Adding a new app
 

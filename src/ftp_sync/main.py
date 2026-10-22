@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from pathlib import Path
 
 from ftp_sync.app_logger import AppLogger
 from ftp_sync.backup import BackupCoordinator
@@ -14,12 +15,15 @@ from ftp_sync.sync_runner import SyncRunner
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Sync stored FTP accounts between apps")
     parser.add_argument("--source", choices=[k.value for k in AppKind], help="app to sync from")
+    parser.add_argument(
+        "--deploy-config", type=Path, help="deploy-tool config file to read instead of asking"
+    )
     args = parser.parse_args(argv)
 
     settings = Settings.from_env()
     AppLogger.configure(settings.log_level)
     try:
-        stores = build_stores(settings, BackupCoordinator(settings.backup_dir))
+        stores = build_stores(settings, BackupCoordinator(settings.backup_dir), args.deploy_config)
         SyncRunner(stores).run(AppKind(args.source) if args.source else None)
     except KeyboardInterrupt:
         return 1
