@@ -3,6 +3,10 @@
     "TICKETS_WATCHER_COMMANDS.md": 2
   },
   "command_check_scripts": [
+    "analyze_changed_and_new_files.bat",
+    "analyze_code.bat",
+    "analyze_code_config.bat",
+    "analyze_code_config.example.bat",
     "graphify_update.bat",
     "menu_smoke.bat",
     "run_integration_tests.bat",
@@ -10,8 +14,12 @@
   ],
   "analysis_commands": [
     "tools\\run_tests.bat",
-    "tools\\run_integration_tests.bat"
+    "tools\\run_integration_tests.bat",
+    "tools\\analyze_changed_and_new_files.bat"
   ],
+  "analysis_command_kinds": {
+    "tools\\analyze_changed_and_new_files.bat": "code_quality"
+  },
   "analysis_commands_seen": {
     "scripts": [
       "graphify_update.bat",
@@ -27,6 +35,9 @@
     },
     "tools\\run_integration_tests.bat": {
       "test": "green"
+    },
+    "tools\\analyze_changed_and_new_files.bat": {
+      "code_quality": "green"
     }
   },
   "analysis_code_quality_answered": true
