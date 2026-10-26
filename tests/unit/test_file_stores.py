@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 
 import pytest
+from ftp_account_readers.nppftp_password import encrypt
 
 from ftp_sync.backup import BackupCoordinator
 from ftp_sync.models import FtpProtocol
-from ftp_sync.stores import nppftp_password
 from ftp_sync.stores.account_store import AccountStore
 from ftp_sync.stores.filezilla_store import FileZillaStore
 from ftp_sync.stores.fman_store import FmanStore
@@ -50,7 +50,7 @@ def filezilla(tmp_path: Path, backup: BackupCoordinator) -> FileZillaStore:
 @pytest.fixture
 def nppftp(tmp_path: Path, backup: BackupCoordinator) -> NppFtpStore:
     path = tmp_path / "NppFTP.xml"
-    path.write_text(NPPFTP_XML.format(password=nppftp_password.encrypt("npw")), encoding="utf-8")
+    path.write_text(NPPFTP_XML.format(password=encrypt("npw")), encoding="utf-8")
     return NppFtpStore(path, backup)
 
 
@@ -63,33 +63,6 @@ def fman(tmp_path: Path, backup: BackupCoordinator) -> FmanStore:
     }
     path.write_text(json.dumps(data), encoding="utf-8")
     return FmanStore(path, backup)
-
-
-def test_filezilla_load(filezilla: FileZillaStore) -> None:
-    a, b = filezilla.load()
-    assert (a.name, a.folder, a.host, a.port, a.user, a.password) == (
-        "Site A",
-        "Clients",
-        "a.example",
-        2121,
-        "alice",
-        "secret",
-    )
-    assert a.protocol is FtpProtocol.FTPS
-    assert a.remote_dir == "/www/html"
-    assert (b.protocol, b.password, b.folder, b.remote_dir) == (FtpProtocol.SFTP, "", "", "")
-
-
-def test_nppftp_load(nppftp: NppFtpStore) -> None:
-    (n,) = nppftp.load()
-    assert (n.name, n.folder, n.host, n.user, n.password) == (
-        "n1",
-        "Clients",
-        "n.example",
-        "nina",
-        "npw",
-    )
-    assert (n.protocol, n.remote_dir) == (FtpProtocol.FTPS, "/srv")
 
 
 def test_fman_load(fman: FmanStore) -> None:

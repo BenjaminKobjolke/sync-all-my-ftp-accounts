@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "kas-api-python",
     "pick[blessed]>=2.6.0",
-    "pycryptodome>=4.0.1",
+    "python-ftp-account-readers",
 ]
 
 [project.scripts]
@@ -40,7 +40,7 @@ strict = true
 files = ["src"]
 
 [[tool.mypy.overrides]]
-module = ["pick", "Crypto.*"]
+module = ["pick"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -50,3 +50,4 @@ timeout = 120
 
 [tool.uv.sources]
 kas-api-python = { path = "../../Intern/kas-api-python", editable = true }
+python-ftp-account-readers = { path = "../python-ftp-account-readers", editable = true }

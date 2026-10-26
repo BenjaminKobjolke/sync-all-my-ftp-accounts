@@ -1,9 +1,17 @@
 """Contract every credential store implements, plus small shared helpers."""
 
-from collections.abc import Collection
 from typing import Protocol, runtime_checkable
 
-from ftp_sync import constants
+from ftp_account_readers.helpers import (
+    join_folder as join_folder,
+)
+from ftp_account_readers.helpers import (
+    parse_port as parse_port,
+)
+from ftp_account_readers.helpers import (
+    unique_name as unique_name,
+)
+
 from ftp_sync.models import AppKind, FtpAccount, FtpProtocol
 
 
@@ -24,25 +32,3 @@ class PasswordChangingStore(Protocol):
     """A source that can set a new password on the server for one of its accounts."""
 
     def change_password(self, account: FtpAccount, password: str) -> None: ...
-
-
-def unique_name(name: str, taken: Collection[str]) -> str:
-    """Return `name`, or `name (2)`, `name (3)`, ... if already taken."""
-    candidate, counter = name, 2
-    while candidate in taken:
-        candidate = f"{name} ({counter})"
-        counter += 1
-    return candidate
-
-
-def join_folder(*parts: str) -> str:
-    return constants.FOLDER_SEPARATOR.join(p for p in parts if p)
-
-
-def parse_port(value: str | int | None, protocol: FtpProtocol) -> int:
-    if value is None or value == "":
-        return protocol.default_port
-    try:
-        return int(value)
-    except ValueError:
-        return protocol.default_port

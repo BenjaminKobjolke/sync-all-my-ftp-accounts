@@ -1,8 +1,5 @@
 """String and numeric constants shared across modules."""
 
-FTP_DEFAULT_PORT = 21
-SFTP_DEFAULT_PORT = 22
-
 APP_LABELS = {
     "winscp": "WinSCP",
     "filezilla": "FileZilla",
@@ -64,7 +61,6 @@ WINSCP_FS_SFTP = 2
 WINSCP_FS_FTP = 5
 WINSCP_FTPS_NONE = 0
 WINSCP_FTPS_EXPLICIT = 3
-WINSCP_DEFAULT_SETTINGS_SESSION = "Default Settings"
 
 # FileZilla sitemanager.xml
 FZ_SERVERS = "Servers"
@@ -81,7 +77,6 @@ FZ_NAME = "Name"
 FZ_REMOTE_DIR = "RemoteDir"
 FZ_PROTOCOL_FTP = 0
 FZ_PROTOCOL_SFTP = 1
-FZ_PROTOCOL_FTPS_IMPLICIT = 3
 FZ_PROTOCOL_FTPS_EXPLICIT = 4
 FZ_LOGONTYPE_NORMAL = 1
 
@@ -92,7 +87,6 @@ NPP_SECURITY_FTP = 0
 NPP_SECURITY_FTPS = 1
 NPP_SECURITY_FTPES = 2
 NPP_SECURITY_SFTP = 3
-NPP_DEFAULT_KEY = b"NppFTP00"
 
 # fman bookmarks
 FMAN_SCHEMES = {"ftp", "ftps"}

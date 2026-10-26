@@ -3,12 +3,13 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from ftp_account_readers import is_nppftp_available, read_nppftp
+from ftp_account_readers.helpers import unique_name
+from ftp_account_readers.nppftp_password import encrypt
+
 from ftp_sync import constants as c
-from ftp_sync.app_logger import AppLogger
 from ftp_sync.backup import BackupCoordinator
 from ftp_sync.models import AppKind, FtpAccount, FtpProtocol
-from ftp_sync.stores import nppftp_password
-from ftp_sync.stores.account_store import parse_port, unique_name
 from ftp_sync.stores.xml_file import child, write_root
 
 _PROTOCOL_TO_NPP = {
@@ -42,16 +43,13 @@ class NppFtpStore:
         self._backup = backup
 
     def is_available(self) -> bool:
-        return self._path.is_file()
+        return is_nppftp_available(self._path)
 
     def supports(self, protocol: FtpProtocol) -> bool:
         return True
 
     def load(self) -> list[FtpAccount]:
-        profiles = ET.parse(self._path).getroot().find(c.NPP_PROFILES)
-        if profiles is None:
-            return []
-        return [_parse(p) for p in profiles.findall(c.NPP_PROFILE) if p.get("hostname")]
+        return read_nppftp(self._path)
 
     def add(self, account: FtpAccount) -> None:
         self._backup.backup_file(self._path)
@@ -68,7 +66,7 @@ class NppFtpStore:
             "hostname": account.host,
             "port": str(account.port),
             "username": account.user,
-            "password": nppftp_password.encrypt(account.password),
+            "password": encrypt(account.password),
             "securityMode": str(_PROTOCOL_TO_NPP[account.protocol]),
             "initialDir": account.remote_dir,
         }
@@ -78,29 +76,3 @@ class NppFtpStore:
         write_root(tree, self._path, "    ")
 
 
-def _parse(profile: ET.Element) -> FtpAccount:
-    protocol = _protocol(profile.get("securityMode", ""))
-    host = profile.get("hostname", "")
-    password = ""
-    try:
-        password = nppftp_password.decrypt(profile.get("password", ""))
-    except (ValueError, UnicodeDecodeError):
-        AppLogger.warning(f"NppFTP: cannot decrypt password of profile {profile.get('name')}")
-    return FtpAccount(
-        name=profile.get("name") or host,
-        host=host,
-        user=profile.get("username", ""),
-        password=password,
-        port=parse_port(profile.get("port"), protocol),
-        protocol=protocol,
-        folder=profile.get("parent", ""),
-        remote_dir=profile.get("initialDir", ""),
-    )
-
-
-def _protocol(value: str) -> FtpProtocol:
-    if value == str(c.NPP_SECURITY_SFTP):
-        return FtpProtocol.SFTP
-    if value in (str(c.NPP_SECURITY_FTPS), str(c.NPP_SECURITY_FTPES)):
-        return FtpProtocol.FTPS
-    return FtpProtocol.FTP

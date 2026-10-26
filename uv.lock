@@ -408,6 +408,25 @@ wheels = [
 ]
 
 [[package]]
+name = "python-ftp-account-readers"
+version = "0.1.0"
+source = { editable = "../python-ftp-account-readers" }
+dependencies = [
+    { name = "pycryptodome" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pycryptodome", specifier = ">=4.0.1" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=2.4.0" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-timeout", specifier = ">=2.4.0" },
+    { name = "ruff", specifier = ">=0.17.1" },
+]
+
+[[package]]
 name = "ruff"
 version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
@@ -439,7 +458,7 @@ source = { editable = "." }
 dependencies = [
     { name = "kas-api-python" },
     { name = "pick", extra = ["blessed"] },
-    { name = "pycryptodome" },
+    { name = "python-ftp-account-readers" },
 ]
 
 [package.dev-dependencies]
@@ -454,7 +473,7 @@ dev = [
 requires-dist = [
     { name = "kas-api-python", editable = "../../Intern/kas-api-python" },
     { name = "pick", extras = ["blessed"], specifier = ">=2.6.0" },
-    { name = "pycryptodome", specifier = ">=4.0.1" },
+    { name = "python-ftp-account-readers", editable = "../python-ftp-account-readers" },
 ]
 
 [package.metadata.requires-dev]

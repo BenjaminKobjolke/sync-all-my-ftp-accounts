@@ -7,11 +7,12 @@ import json
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
+from ftp_account_readers.helpers import unique_name
+
 from ftp_sync import constants as c
 from ftp_sync.app_logger import AppLogger
 from ftp_sync.backup import BackupCoordinator
 from ftp_sync.models import AppKind, FtpAccount, FtpProtocol
-from ftp_sync.stores.account_store import unique_name
 
 
 class FmanStore:

@@ -8,10 +8,11 @@ import json
 import subprocess
 from pathlib import Path
 
+from ftp_account_readers.helpers import parse_port
+
 from ftp_sync import constants, menu
 from ftp_sync.app_logger import AppLogger
 from ftp_sync.models import AppKind, FtpAccount, FtpProtocol
-from ftp_sync.stores.account_store import parse_port
 
 
 class DeployToolStore:
