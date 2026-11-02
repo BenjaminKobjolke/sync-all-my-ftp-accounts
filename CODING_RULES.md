@@ -1,7 +1,7 @@
 <!-- Managed by /coding-rules:apply — do not edit rule blocks by hand -->
 
 # Version
-11
+15
 
 Increase this version number whenever this rule file changes.
 
@@ -13,6 +13,7 @@ corresponding `*_RULES.md` files.
 ---
 
 ## Keep CODING_RULES.md in Sync
+<!-- steps: code -->
 
 When working on a project, copy all relevant rules into the project's `CODING_RULES.md` file
 (project root). The project's `CLAUDE.md` carries only a small versioned pointer block that
@@ -22,6 +23,9 @@ mandates reading `CODING_RULES.md` before code work — never the full rules, an
 - Always include all rules from `COMMON_RULES.md` and `IMPLEMENTATION_FLOW.md`.
   `COMMON_RULES.md` is copied into the project's `CODING_RULES.md`;
   `IMPLEMENTATION_FLOW.md` is copied into the project's own `IMPLEMENTATION_FLOW.md`
+- `apply` also writes `CODING_RULES_PLAN.md`, `CODING_RULES_REVIEW.md` and
+  `CODING_RULES_CODE.md` from the same rule blocks. Use `<!-- steps: plan, review, code -->`
+  under a heading to limit its section.
 - Also include applicable language-specific, project-type, and supplemental rule files
   (see `PROJECT_TYPES.md` for the project-type overview)
 - Include optional addon rule files only when the user has opted in to that addon
@@ -117,6 +121,7 @@ components work correctly together and catch issues that unit tests alone cannot
 ---
 
 ## Test Runner Scripts
+<!-- steps: review, code -->
 
 Every project must provide the following batch files in the `tools/` directory:
 
@@ -148,6 +153,7 @@ or use the runner's own log-file option.
 ---
 
 ## No `pause` in Batch Files
+<!-- steps: review, code -->
 
 Batch files must never contain a `pause` line. `pause` waits for a keypress, so any bat that has one
 hangs forever when run by CI, another bat, or an AI agent. End with an explicit `exit /b <code>`
@@ -188,6 +194,7 @@ from being re-invented in every new project.
 ---
 
 ## New Projects Start From a Template
+<!-- steps: plan -->
 
 Before creating a new project (an API, an app, a tool — anything that gets its own folder),
 ask the user whether a template project exists for that kind of project. Never scaffold from
@@ -261,12 +268,22 @@ kept to a minimum — a future maintainer (or you, at 3am) has to understand it.
 
 ## Confirm Dependency Versions
 
-Before adding any new package or library, confirm the version with the user to ensure we use
-up-to-date dependencies.
+When adding a new package or library, choose its version yourself from verified facts. Do not
+ask the user to confirm a routine version choice.
 
-- Do not assume which version to use
-- Ask the user to verify the latest stable version
-- Avoid outdated packages that may have security vulnerabilities or missing features
+- Never assume a version from memory: check the authoritative release source (the package
+  registry or the project's official releases) for the latest stable release.
+- Check the project's constraints: runtime/SDK version, the existing lock file, peer
+  dependencies and the package's supported platforms.
+- Use the latest stable release that satisfies them. Skip pre-releases (alpha, beta, rc, dev).
+- Pin or lock the resolved version the way the project already does (lock file, exact pin, or
+  its range convention), and name the chosen version and where it was checked in the plan or
+  change summary.
+- A version the user specified wins.
+- Ask the user only when a real tradeoff remains: the latest stable needs a new major line or a
+  runtime upgrade, supported versions conflict, a security advisory affects the candidate, or
+  the release source cannot be checked.
+- Avoid outdated packages that may have security vulnerabilities or missing features.
 
 ---
 
@@ -308,6 +325,7 @@ The logger's name is fixed per language so it is the same known type in every pr
 | Dart/Flutter  | `AppLogger`        | `app_logger.dart`   |
 | Kotlin        | `AppLogger`        | `AppLogger.kt`      |
 | C# (plain)    | `AppLogger`        | `AppLogger.cs`      |
+| C++           | `AppLogger`        | `AppLogger.h` / `AppLogger.cpp` |
 | Unity C#      | `GameLog` (static) | `GameLog.cs`        |
 | Svelte/JS/TS  | `logger` (export)  | `logger.ts`         |
 | Arduino       | `Log`              | `Log.h` / `Log.cpp` |
@@ -347,6 +365,41 @@ Applies to every project that reads data from an API — app, SPA, desktop tool,
   capability.
 
 The server half is `project_type/REST_API.md` -> "List Endpoints: Paging, Sorting, Filtering".
+
+---
+
+## Shared Contract Repository for API and Clients (BINDING)
+
+When two or more projects we own talk over the wire — an API plus an app, an API plus a desktop
+app, or all three — keep their shared values in one contract repository. This does not apply to
+third-party APIs.
+
+- **Why:** each side keeps its own copy of every value that crosses the wire. When one side adds a
+  value the other does not know, the other side can break (for example, the API added a todo type
+  and the watcher rejected the whole todo list).
+- **One separate repository** (`<system>-contract`) holds the contract: at minimum every shared
+  enum in `enums.json`, shaped as `"<Name>": {"values": [sorted unique], "direction":
+  "api_to_client" | "client_to_api", "description": "<where it appears>"}`, plus a `README.md`
+  with the change rules and the list of consumers. Do not add version numbers; the submodule
+  pointer is the version.
+- **Every project includes it as a git submodule at `contract/`.** Pick up changes with
+  `git submodule update --remote contract` and commit the pointer bump. Production code never
+  reads `contract/`; it is test input only.
+- **The API is the producer:** export the contract from its own constants (one map, one export
+  script) and add a freshness test that fails when the committed file differs from the export.
+- **Each client is a consumer:** test that every mapped enum matches the contract in its
+  direction (`api_to_client` sets are equal so the client knows every value;
+  `client_to_api` client values are a subset) and that every contract name is mapped.
+- Both tests skip when `contract/` is not checked out.
+- **Change order:** for an `api_to_client` value, update the contract, release clients that know
+  it, then have the API emit it. For a `client_to_api` value, update the contract and API first,
+  then have the client send it. To remove a value, stop it at the API, then remove it from the
+  contract, then from clients. Never rename a value; renaming is an add plus a remove. Add a new
+  shared enum to the contract in the same change that introduces it.
+- Clients still tolerate an unknown value (skip the row; do not fail the whole response) as a
+  last line of defence, not as permission to skip the order.
+- **Setting it up** is work in each project: when one project of the system lacks the submodule
+  or its test, request it there (linked todo or `/feedback:write`).
 
 ---
 
